@@ -4,20 +4,32 @@
 import * as React from 'react'
 import {fetchPokemon, PokemonDataView, PokemonErrorBoundary} from '../pokemon'
 
-let pokemon
-let pokemonError
-let pokemonPromise = fetchPokemon('pikachu').then(
-  data => (pokemon = data),
-  error => (pokemonError = error),
-)
+const pokemonResource = createResource(fetchPokemon('pikachu'))
+
+function createResource(promise) {
+  let status = 'pending'
+  let result = promise.then(
+    resolved => {
+      status = 'success'
+      result = resolved
+    },
+    rejected => {
+      status = 'error'
+      result = rejected
+    },
+  )
+  return {
+    read() {
+      if (status === 'pending') throw result
+      if (status === 'error') throw result
+      if (status === 'success') return result
+      throw new Error('This should be impossible')
+    },
+  }
+}
 
 function PokemonInfo() {
-  if (pokemonError) {
-    throw pokemonError
-  }
-  if (!pokemon) {
-    throw pokemonPromise
-  }
+  const pokemon = pokemonResource.read()
 
   return (
     <div>
