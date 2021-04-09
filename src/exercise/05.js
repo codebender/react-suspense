@@ -8,6 +8,7 @@ import {
   PokemonForm,
   PokemonDataView,
   PokemonErrorBoundary,
+  getImageUrlForPokemon,
 } from '../pokemon'
 import {createResource} from '../utils'
 
@@ -17,8 +18,6 @@ import {createResource} from '../utils'
 // approach to work!
 // ❗❗❗❗
 
-const cache = {}
-
 function preloadImage(src) {
   return new Promise(resolve => {
     const img = document.createElement('img')
@@ -27,22 +26,12 @@ function preloadImage(src) {
   })
 }
 
-function Img({src, alt, ...props}) {
-  let imgSrcResource = cache[src]
-  if (!imgSrcResource) {
-    imgSrcResource = createResource(preloadImage(src))
-    cache[src] = imgSrcResource
-  }
-
-  return <img src={imgSrcResource.read()} alt={alt} {...props} />
-}
-
 function PokemonInfo({pokemonResource}) {
-  const pokemon = pokemonResource.read()
+  const pokemon = pokemonResource.data.read()
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
-        <Img src={pokemon.image} alt={pokemon.name} />
+        <img src={pokemonResource.image.read()} alt={pokemon.name} />
       </div>
       <PokemonDataView pokemon={pokemon} />
     </div>
@@ -68,7 +57,9 @@ function getPokemonResource(name) {
 }
 
 function createPokemonResource(pokemonName) {
-  return createResource(fetchPokemon(pokemonName))
+  const data = createResource(fetchPokemon(pokemonName))
+  const image = createResource(preloadImage(getImageUrlForPokemon(pokemonName)))
+  return {data, image}
 }
 
 function App() {
